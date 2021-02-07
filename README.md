@@ -1,2 +1,2 @@
 # todo lists API
-Private API to manage todo lists
+Web API to manage todo lists
