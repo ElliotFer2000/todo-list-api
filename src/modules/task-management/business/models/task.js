@@ -1,6 +1,6 @@
-function Task({title,state}){
+function ToDo(title,state){
     this.title = title
     this.state = state
 }
 
-module.exports.Task = Task
+module.exports = ToDo
