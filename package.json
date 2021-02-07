@@ -1,0 +1,28 @@
+{
+  "name": "todo-list-api",
+  "version": "1.0.0",
+  "description": "A web API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ElliotFer2000/todo-lists-api.git"
+  },
+  "keywords": [
+    "web",
+    "api"
+  ],
+  "author": "Elliot F. Williamson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ElliotFer2000/todo-lists-api/issues"
+  },
+  "homepage": "https://github.com/ElliotFer2000/todo-lists-api#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "mongodb": "^3.6.4"
+  }
+}
