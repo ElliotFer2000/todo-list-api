@@ -6,21 +6,16 @@ function taskManagementRepository(database) {
 
     return Object.freeze({
         insertToDo,
-        readTodos,
-        createToDoList
+        readToDos,
+        createToDoList,
+        updateToDo,
+        findToDo
     })
 
-    async function createToDoList({
-        title,
-        creationDate,
-        userOwner
-    }) {
+    async function createToDoList(taskList) {
         try {
-            const result = await database.collection("task_list").insertOne({
-                title,
-                creationDate,
-                userOwner
-            })
+            const result = await database.collection("tasks").insertOne(taskList)
+            return result
         } catch (e) {
             console.log(e)
             return e
@@ -37,7 +32,6 @@ function taskManagementRepository(database) {
                     taskList: todo
                 }
             })
-            console.log("resultado: " + result)
             return result
         } catch (e) {
             console.log(e)
@@ -45,8 +39,60 @@ function taskManagementRepository(database) {
         }
     }
 
-    async function readTodos() {
-        return []
+    async function updateToDo(userOwner, todo) {
+        try {
+            const result = await database.collection("tasks").updateOne({
+                "userOwner": userOwner
+            }, {
+                $set: {
+                    "taskList.$[element].state": todo.state
+                }
+            }, {
+                arrayFilters: [{
+                    "element.title": {
+                        $eq: todo.title
+                    },
+                }],
+                multi: true
+            })
+            return result
+        } catch (e) {
+            console.log(e)
+            return e
+        }
+    }
+
+    async function findToDo(todo,taskList) {
+
+        const result = await database.collection("tasks").countDocuments({
+            "userOwner": taskList.userOwner,
+            "taskList.title": todo.title
+        })
+        
+        return result
+    }
+
+    async function readToDos(userOwner) {
+
+        try {
+            const todos = []
+            const result = await database.collection("tasks").find({
+                "userOwner": userOwner
+
+            })
+
+            await result.forEach(element => {
+                element.taskList = element.taskList.filter((value, index, array) => {
+                    return value.state !== 0
+                })
+                todos.push(element)
+            });
+
+            return todos
+        } catch (e) {
+            console.log(e)
+            return e
+        }
     }
 }
 

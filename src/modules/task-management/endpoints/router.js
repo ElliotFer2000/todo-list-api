@@ -1,5 +1,6 @@
 const router = require("express").Router()
 const ToDo = require("../business/models/ToDo")
+const TaskList = require("../business/models/TaskList")
 const jwt = require('jsonwebtoken')
 
 const {
@@ -10,15 +11,20 @@ function taskManagementRouting(
     todoRepository
 ) {
     function verifyAuth(req, resp, next) {
-        if (!req.body.accessToken) {
+        const token = req.headers['authorization'].replace("Bearer", "").trim()
+
+        if (!token) {
             resp.status(401).json({
                 message: 'There is no access token to access the resource'
             })
         } else {
             try {
-                const res = jwt.verify(req.body.accessToken, process.env.JWT_SECRET)
+                const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
+                console.log(decodedToken)
+                req.body.decodedToken = decodedToken
                 next()
             } catch (e) {
+
                 resp.status(401).json({
                     message: e.message
                 })
@@ -48,41 +54,88 @@ function taskManagementRouting(
 
         },
         verifyAuth,
-        async function addToDo(req, resp, next) {
-            const {
-                title,
-                idTaskList
-            } = req.body
+        async function verifyTitleExistence(req, resp, next) {
+                const res = await todoRepository.findToDo(new ToDo(req.body.title), new TaskList(null, null, req.body.decodedToken.userId, null))
 
-            if (validateToDo(new ToDo(title, idTaskList))) {
-                const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, false))
-                result ? resp.status(200).json({
-                    message: 'Added'
-                }) : resp.status('500').json({
-                    message: 'Server error, the todo was not inserted, try again'
-                })
-            }
-        })
+                if (!res) {
+                    next()
+                } else {
+                    resp.status(401).json({
+                        message: 'A todo item with the title provided already exist'
+                    })
+                }
+            },
+            async function addToDo(req, resp) {
+                const {
+                    title,
+                    idTaskList
+                } = req.body
+
+                if (validateToDo(new ToDo(title, idTaskList))) {
+                    const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, false))
+                    result ? resp.status(200).json({
+                        message: 'Added'
+                    }) : resp.status('500').json({
+                        message: 'Server error, the todo was not inserted, try again'
+                    })
+                }
+            })
 
     router.post("/create-todo-list", function verifyRequestFormat(req, resp, next) {
             const listData = req.body
-            if ((!listData.title) && (!listData.creationDate) && (!listData.idUser)) {
-                req.status(400).json({
+            if ((!listData.title) && (!listData.creationDate)) {
+                resp.status(400).json({
                     error: 'Missing JSON properties'
                 })
             } else {
                 next()
             }
         },
-        verifyAuth)
+        verifyAuth,
+        async function saveToDoList(req, resp) {
+            const {
+                title,
+                creationDate,
+                decodedToken
+            } = req.body
+            const result = await todoRepository.createToDoList(new TaskList(title, creationDate, decodedToken.userId, []))
 
-    router.get("/get-todos", async function getToDos(req, resp) {
+            result ? resp.status(200).json({
+                message: 'ToDo List added'
+            }) : resp.status('500').json({
+                message: 'Server error, the todo was not inserted, try again'
+            })
+        })
 
-    })
+    router.get("/get-todos", verifyAuth,
+        async function getToDos(req, resp) {
+            const todos = await todoRepository.readToDos(req.body.decodedToken.userId)
 
-    router.put("/update-state", async function update(req, resp) {
+            resp.json(todos)
+        })
 
-    })
+    router.put("/modify-todo-item", async function verifyRequestFormat(req, resp, next) {
+            const todoData = req.body
+
+            if ((!todoData.userOwner) && (!(typeof todoData.state === "boolean")) && (!todoData.title)) {
+                resp.status(400).json({
+                    error: 'Missing JSON properties'
+                })
+            } else {
+                next()
+            }
+        },
+        verifyAuth,
+        async function updateToDo(req, resp) {
+            const result = await todoRepository.updateToDo(req.body.userOwner, new ToDo(req.body.title, req.body.state))
+
+            result ? resp.status(200).json({
+                message: 'State Updated'
+            }) : resp.status('500').json({
+                message: 'Server error, try again'
+            })
+        })
+
 
     return router
 }
