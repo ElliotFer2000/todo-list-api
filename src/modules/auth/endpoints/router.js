@@ -1,6 +1,9 @@
 const router = require("express").Router()
 const jwt = require('jsonwebtoken');
-const getHash = require("../../../helpers/encrypt")
+const {
+    getHash,
+    compareHashes
+} = require("../../../helpers/encrypt")
 const User = require("../business/models/User")
 const {
     validateUserAndPassword
@@ -39,7 +42,6 @@ function authRouting(
     }, async function verifyUserNameDuplication(req, resp, next) {
 
         const result = await userRepository.findUser(req.body.userName)
-
         if (result) {
             resp.status(400).json({
                 message: 'Already exist the userName provided'
@@ -52,14 +54,14 @@ function authRouting(
     }, async function signUp(req, resp) {
 
         try {
-            const encryptedPassword = await getHash(req.body.password)
-
+            const encryptedPassword = await getHash(req.body.passWord)
             await userRepository.insertUser(new User(req.body.userName, encryptedPassword))
 
             resp.status(200).json({
                 message: 'User added'
             })
         } catch (e) {
+            console.log(e)
             resp.status(500).json({
                 message: 'Server error, the user was not inserted, try again'
             })
@@ -78,11 +80,9 @@ function authRouting(
     }, async function verifyUserExistence(req, resp, next) {
 
             const result = await userRepository.findUser(req.body.userName)
-            console.log("Login result")
-            console.log(result)
-            req.body = new User(req.body.userName, req.body.passWord)
-
+            req.body.userId = result._id
             if (result) {
+                req.body.dbPassword = result.passWord
                 next()
             } else {
                 resp.status(400).json({
@@ -90,20 +90,31 @@ function authRouting(
                 })
             }
         },
-        function sendAccessToken(req, resp) {
+        async function comparePasswords(req, resp, next) {
+                const resultComparision = await compareHashes(req.body.passWord, req.body.dbPassword)
+                if (resultComparision) {
+                    next()
+                } else {
+                    resp.status(400).json({
+                        message: 'The password is incorrect'
+                    })
+                }
+            },
+            function sendAccessToken(req, resp) {
 
-            function generateAccessToken(userName) {
-                return jwt.sign({
-                    userName: userName,
-                }, process.env.JWT_SECRET, {
-                    expiresIn: '24h'
-                });
-            }
+                function generateAccessToken(userName) {
+                    return jwt.sign({
+                        userName: userName,
+                        userId: req.body.userId
+                    }, process.env.JWT_SECRET, {
+                        expiresIn: '24h'
+                    });
+                }
 
-            resp.status(200).json({
-                accessToken: generateAccessToken(req.body.userName)
+                resp.status(200).json({
+                    accessToken: generateAccessToken(req.body.userName)
+                })
             })
-        })
 
     return router
 }

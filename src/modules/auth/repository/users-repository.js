@@ -6,13 +6,8 @@ function usersRepository(database) {
 
     return Object.freeze({
         insertUser,
-        findUser,
-        createToDoList
+        findUser
     })
-
-    async function createToDoList() {
-        
-    }
 
     async function findUser(userName) {
         try {
