@@ -1,17 +1,13 @@
 const router = require("express").Router()
-const ToDo = require("../business/models/task")
+const ToDo = require("../business/models/ToDo")
 const {validateToDo} = require("../business/task-management")
 
 function taskManagementRouting(
     todoRepository
 ) {
-    console.log("Paco gento: " + todoRepository)
     router.post("/add-todo", function verifyRequestFormat(req, resp, next) {
 
-        console.log("Here")
         const todo = req.body
-
-        console.log(todo)
 
         if (!(typeof todo === "object")) {
             resp.status(400).json({

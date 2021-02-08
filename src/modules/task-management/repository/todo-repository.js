@@ -3,16 +3,34 @@ const {
 } = require("mongodb")
 
 function taskManagementRepository(database) {
-   
+
     return Object.freeze({
         insertToDo,
         readTodos,
+        createToDoList
     })
 
-    async function insertToDo(idTaskList,todo) {
-       
+    async function createToDoList({
+        title,
+        creationDate,
+        userOwner
+    }) {
         try {
-            result = await database.collection("tasks").updateOne({
+            const result = await database.collection("task_list").insertOne({
+                title,
+                creationDate,
+                userOwner
+            })
+        } catch (e) {
+            console.log(e)
+            return e
+        }
+    }
+
+    async function insertToDo(idTaskList, todo) {
+
+        try {
+            const result = await database.collection("tasks").updateOne({
                 _id: ObjectId(idTaskList)
             }, {
                 $push: {
@@ -32,4 +50,4 @@ function taskManagementRepository(database) {
     }
 }
 
-module.exports.taskManagementRepository = taskManagementRepository
+module.exports = taskManagementRepository
