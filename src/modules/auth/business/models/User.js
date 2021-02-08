@@ -1,4 +1,6 @@
-function User(userName,passWord) {
+const jwt = require('jsonwebtoken');
+
+function User(userName, passWord) {
     this.userName = userName
     this.passWord = passWord
 }

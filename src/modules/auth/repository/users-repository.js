@@ -33,7 +33,6 @@ function usersRepository(database) {
         passWord
     }) {
         try {
-
             const result = await database.collection("users").insertOne({
                 userName,
                 passWord
