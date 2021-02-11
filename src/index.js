@@ -1,4 +1,3 @@
-const express = require("express")
 const bodyParser = require("body-parser")
 const expressApp = express()
 const taskManagementRouting  = require("./modules/task-management/endpoints/router")
