@@ -1,6 +1,6 @@
 const bodyParser = require("body-parser")
-const expressApp = express()
-const {authRepository,authRouting} = require("./modules/auth/endpoints/router")
+const expressApp = require("express")()
+const {authRepository,authRouting} = require("./modules/auth/index")
 const {todoRepository,todoRouting} = require("./modules/task-management/index")
 const {makeDb} = require("./db/index")
 
