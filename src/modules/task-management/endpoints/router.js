@@ -20,7 +20,6 @@ function taskManagementRouting(
         } else {
             try {
                 const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
-                console.log(decodedToken)
                 req.body.decodedToken = decodedToken
                 next()
             } catch (e) {
@@ -55,8 +54,8 @@ function taskManagementRouting(
         },
         verifyAuth,
         async function verifyTitleExistence(req, resp, next) {
-                const res = await todoRepository.findToDo(new ToDo(req.body.title), new TaskList(null, null, req.body.decodedToken.userId, null))
-
+                const res = await todoRepository.findToDo(new ToDo(req.body.title), new TaskList(null, null, req.body.decodedToken.userId, null,req.body.idTaskList))
+                
                 if (!res) {
                     next()
                 } else {

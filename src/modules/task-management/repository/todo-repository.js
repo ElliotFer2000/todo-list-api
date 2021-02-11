@@ -63,9 +63,10 @@ function taskManagementRepository(database) {
     }
 
     async function findToDo(todo,taskList) {
-
+        console.log("User Owner: " + taskList.userOwner + " id list: " + taskList._id + " title:  " + todo.title)
         const result = await database.collection("tasks").countDocuments({
             "userOwner": taskList.userOwner,
+            "_id": ObjectId(taskList._id),
             "taskList.title": todo.title
         })
         
