@@ -1,0 +1,144 @@
+const router = require("express").Router()
+const ToDo = require("../business/models/ToDo")
+const TaskList = require("../business/models/TaskList")
+const jwt = require('jsonwebtoken')
+
+const {
+    validateToDo
+} = require("../business/task-management")
+
+function taskManagementRouting(
+    todoRepository
+) {
+    function verifyAuth(req, resp, next) {
+        const token = req.headers['authorization'].replace("Bearer", "").trim()
+
+        if (!token) {
+            resp.status(401).json({
+                message: 'There is no access token to access the resource'
+            })
+        } else {
+            try {
+                const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
+                console.log(decodedToken)
+                req.body.decodedToken = decodedToken
+                next()
+            } catch (e) {
+
+                resp.status(401).json({
+                    message: e.message
+                })
+            }
+        }
+    }
+
+    router.post("/add-todo", function verifyRequestFormat(req, resp, next) {
+
+            const todo = req.body
+
+            if (!(typeof todo === "object")) {
+                resp.status(400).json({
+                    error: 'There is no body in the request'
+                })
+            } else {
+
+                if ((!todo.title) || (!todo.idTaskList)) {
+                    resp.status(400).json({
+                        message: 'Missing JSON properties'
+                    })
+
+                } else {
+                    next()
+                }
+            }
+
+        },
+        verifyAuth,
+        async function verifyTitleExistence(req, resp, next) {
+                const res = await todoRepository.findToDo(new ToDo(req.body.title), new TaskList(null, null, req.body.decodedToken.userId, null))
+
+                if (!res) {
+                    next()
+                } else {
+                    resp.status(401).json({
+                        message: 'A todo item with the title provided already exist'
+                    })
+                }
+            },
+            async function addToDo(req, resp) {
+                const {
+                    title,
+                    idTaskList
+                } = req.body
+
+                if (validateToDo(new ToDo(title, idTaskList))) {
+                    const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, false))
+                    result ? resp.status(200).json({
+                        message: 'Added'
+                    }) : resp.status('500').json({
+                        message: 'Server error, the todo was not inserted, try again'
+                    })
+                }
+            })
+
+    router.post("/create-todo-list", function verifyRequestFormat(req, resp, next) {
+            const listData = req.body
+            if ((!listData.title) && (!listData.creationDate)) {
+                resp.status(400).json({
+                    error: 'Missing JSON properties'
+                })
+            } else {
+                next()
+            }
+        },
+        verifyAuth,
+        async function saveToDoList(req, resp) {
+            const {
+                title,
+                creationDate,
+                decodedToken
+            } = req.body
+            const result = await todoRepository.createToDoList(new TaskList(title, creationDate, decodedToken.userId, []))
+
+            result ? resp.status(200).json({
+                message: 'ToDo List added'
+            }) : resp.status('500').json({
+                message: 'Server error, the todo was not inserted, try again'
+            })
+        })
+
+    router.get("/get-todos", verifyAuth,
+        async function getToDos(req, resp) {
+            const todos = await todoRepository.readToDos(req.body.decodedToken.userId)
+
+            resp.json(todos)
+        })
+
+    router.put("/modify-todo-item", async function verifyRequestFormat(req, resp, next) {
+            const todoData = req.body
+
+            if ((!todoData.userOwner) && (!(typeof todoData.state === "boolean")) && (!todoData.title)) {
+                resp.status(400).json({
+                    error: 'Missing JSON properties'
+                })
+            } else {
+                next()
+            }
+        },
+        verifyAuth,
+        async function updateToDo(req, resp) {
+            const result = await todoRepository.updateToDo(req.body.userOwner, new ToDo(req.body.title, req.body.state))
+
+            result ? resp.status(200).json({
+                message: 'State Updated'
+            }) : resp.status('500').json({
+                message: 'Server error, try again'
+            })
+        })
+
+
+    return router
+}
+
+
+module.exports = taskManagementRouting
