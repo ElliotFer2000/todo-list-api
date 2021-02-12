@@ -39,10 +39,12 @@ function taskManagementRepository(database) {
         }
     }
 
-    async function updateToDo(userOwner, todo) {
+    async function updateToDo(userOwner,todo,idTaskList) {
         try {
+           
             const result = await database.collection("tasks").updateOne({
-                "userOwner": userOwner
+                "userOwner": userOwner,
+                "_id": ObjectId(idTaskList)
             }, {
                 $set: {
                     "taskList.$[element].state": todo.state
@@ -63,7 +65,7 @@ function taskManagementRepository(database) {
     }
 
     async function findToDo(todo,taskList) {
-        console.log("User Owner: " + taskList.userOwner + " id list: " + taskList._id + " title:  " + todo.title)
+        
         const result = await database.collection("tasks").countDocuments({
             "userOwner": taskList.userOwner,
             "_id": ObjectId(taskList._id),

@@ -126,7 +126,7 @@ function taskManagementRouting(
     router.put("/modify-todo-item", async function verifyRequestFormat(req, resp, next) {
             const todoData = req.body
 
-            if ((!todoData.userOwner) && (!(typeof todoData.state === "boolean")) && (!todoData.title)) {
+            if ((typeof todoData.state === "boolean") && (!todoData.title) && (!todoData.idTaskList)) {
                 resp.status(400).json({
                     error: 'Missing JSON properties'
                 })
@@ -136,12 +136,12 @@ function taskManagementRouting(
         },
         verifyAuth,
         async function updateToDo(req, resp) {
-            const result = await todoRepository.updateToDo(req.body.userOwner, new ToDo(req.body.title, req.body.state))
+            const result = await todoRepository.updateToDo(req.body.decodedToken.userId, new ToDo(req.body.title, req.body.state),req.body.idTaskList)
 
-            result ? resp.status(200).json({
+            result.modifiedCount ? resp.status(200).json({
                 message: 'State Updated'
             }) : resp.status('500').json({
-                message: 'Server error, try again'
+                message: 'The update did not happen, try again, check if the title exists'
             })
         })
 
