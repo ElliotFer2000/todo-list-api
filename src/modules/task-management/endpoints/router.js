@@ -4,7 +4,12 @@ const TaskList = require("../business/models/TaskList")
 const jwt = require('jsonwebtoken')
 
 const {
-    validateToDo
+    verifyDateFormat
+} = require("../../../helpers/date")
+
+const {
+    validateToDoTitle,
+    validateDueDate
 } = require("../business/task-management")
 
 function taskManagementRouting(
@@ -41,7 +46,7 @@ function taskManagementRouting(
                 })
             } else {
 
-                if ((!todo.title) || (!todo.idTaskList)) {
+                if ((!todo.title) || (!todo.idTaskList) || (!todo.dueDate)) {
                     resp.status(400).json({
                         message: 'Missing JSON properties'
                     })
@@ -54,8 +59,8 @@ function taskManagementRouting(
         },
         verifyAuth,
         async function verifyTitleExistence(req, resp, next) {
-                const res = await todoRepository.findToDo(new ToDo(req.body.title), new TaskList(null, null, req.body.decodedToken.userId, null,req.body.idTaskList))
-                
+                const res = await todoRepository.findToDo(new ToDo(req.body.title), new TaskList(null, null, req.body.decodedToken.userId, null, req.body.idTaskList))
+
                 if (!res) {
                     next()
                 } else {
@@ -67,15 +72,20 @@ function taskManagementRouting(
             async function addToDo(req, resp) {
                 const {
                     title,
-                    idTaskList
+                    idTaskList,
+                    dueDate
                 } = req.body
-
-                if (validateToDo(new ToDo(title, idTaskList))) {
-                    const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, false))
+                console.log(dueDate)
+                if (validateToDoTitle(new ToDo(title, idTaskList, dueDate)) && verifyDateFormat(new Date(dueDate),dueDate) && validateDueDate(dueDate)) {
+                    const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, false,dueDate))
                     result ? resp.status(200).json({
                         message: 'Added'
-                    }) : resp.status('500').json({
+                    }) : resp.status(500).json({
                         message: 'Server error, the todo was not inserted, try again'
+                    })
+                }else{
+                    resp.status(400).json({
+                        message: 'ToDo title or date format or dueDate are invalid, dueDate format must be dd-mm-yyyyThh:mm:ss and be equal or greater than today'
                     })
                 }
             })
