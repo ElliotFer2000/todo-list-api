@@ -76,14 +76,14 @@ function taskManagementRouting(
                     dueDate
                 } = req.body
                 console.log(dueDate)
-                if (validateToDoTitle(new ToDo(title, idTaskList, dueDate)) && verifyDateFormat(new Date(dueDate),dueDate) && validateDueDate(dueDate)) {
-                    const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, false,dueDate))
+                if (validateToDoTitle(new ToDo(title, idTaskList, dueDate)) && verifyDateFormat(new Date(dueDate), dueDate) && validateDueDate(dueDate)) {
+                    const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, false, dueDate))
                     result ? resp.status(200).json({
                         message: 'Added'
                     }) : resp.status(500).json({
                         message: 'Server error, the todo was not inserted, try again'
                     })
-                }else{
+                } else {
                     resp.status(400).json({
                         message: 'ToDo title or date format or dueDate are invalid, dueDate format must be dd-mm-yyyyThh:mm:ss and be equal or greater than today'
                     })
@@ -123,20 +123,28 @@ function taskManagementRouting(
             resp.json(todos)
         })
 
-    router.put("/modify-todo-item", async function verifyRequestFormat(req, resp, next) {
+    router.put("/modify-todo-item", async function verifyStateAndRequestFormat(req, resp, next) {
             const todoData = req.body
 
-            if ((typeof todoData.state === "boolean") && (!todoData.title) && (!todoData.idTaskList)) {
+            if ((!(typeof todoData.state === "number")) && (!todoData.title) && (!todoData.idTaskList)) {
                 resp.status(400).json({
                     error: 'Missing JSON properties'
                 })
             } else {
-                next()
+                if(todoData.state === 0 || todoData.state === 1 || todoData.state === 2){
+                    next()
+                }else{
+                    resp.status(400).json({
+                        message: 'Write either 0 to mark a todo as unfinished, 1 to mark a todo as finished and 2 to make a todo untrackable'
+                    })
+                }
+                
             }
         },
         verifyAuth,
+        
         async function updateToDo(req, resp) {
-            const result = await todoRepository.updateToDo(req.body.decodedToken.userId, new ToDo(req.body.title, req.body.state),req.body.idTaskList)
+            const result = await todoRepository.updateToDo(req.body.decodedToken.userId, new ToDo(req.body.title, req.body.state), req.body.idTaskList)
 
             result.modifiedCount ? resp.status(200).json({
                 message: 'State Updated'

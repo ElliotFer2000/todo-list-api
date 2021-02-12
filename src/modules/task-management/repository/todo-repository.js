@@ -86,7 +86,7 @@ function taskManagementRepository(database) {
 
             await result.forEach(element => {
                 element.taskList = element.taskList.filter((value, index, array) => {
-                    return value.state !== 0
+                    return value.state !== 2
                 })
                 todos.push(element)
             });
