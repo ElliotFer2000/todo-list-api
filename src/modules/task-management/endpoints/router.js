@@ -16,24 +16,31 @@ function taskManagementRouting(
     todoRepository
 ) {
     function verifyAuth(req, resp, next) {
-        const token = req.headers['authorization'].replace("Bearer", "").trim()
-
-        if (!token) {
-            resp.status(401).json({
-                message: 'There is no access token to access the resource'
-            })
-        } else {
-            try {
-                const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
-                req.body.decodedToken = decodedToken
-                next()
-            } catch (e) {
-
+        
+        if(req.headers['authorization']){
+            const token = req.headers['authorization'].replace("Bearer", "").trim()
+            if (!token) {
                 resp.status(401).json({
-                    message: e.message
+                    message: 'There is no access token to access the resource'
                 })
+            } else {
+                try {
+                    const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
+                    req.body.decodedToken = decodedToken
+                    next()
+                } catch (e) {
+    
+                    resp.status(401).json({
+                        message: e.message
+                    })
+                }
             }
+        }else{
+          resp.status(401).json({
+              message: 'You must to include an authorization header with [Bearer <access_token>] as the content'
+          })  
         }
+
     }
 
     router.post("/add-todo", function verifyRequestFormat(req, resp, next) {
@@ -64,7 +71,7 @@ function taskManagementRouting(
                 if (!res) {
                     next()
                 } else {
-                    resp.status(401).json({
+                    resp.status(400).json({
                         message: 'A todo item with the title provided already exist'
                     })
                 }
@@ -77,7 +84,7 @@ function taskManagementRouting(
                 } = req.body
                 console.log(dueDate)
                 if (validateToDoTitle(new ToDo(title, idTaskList, dueDate)) && verifyDateFormat(new Date(dueDate), dueDate) && validateDueDate(dueDate)) {
-                    const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, false, dueDate))
+                    const result = await todoRepository.insertToDo(idTaskList, new ToDo(title, 0, dueDate))
                     result ? resp.status(200).json({
                         message: 'Added'
                     }) : resp.status(500).json({
